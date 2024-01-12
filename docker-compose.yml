@@ -1,0 +1,22 @@
+version: '3.1'
+
+services:
+  IoTService:
+    image: mysql:8.0
+    container_name: IoTService
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: IoTSer_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: userpassword
+    ports:
+      - 3306:3306
+    volumes:
+      # 初期データを投入するSQLが格納されているdir
+      - ./db/mysql_init:/docker-entrypoint-initdb.d
+      # 永続化するときにマウントするdir
+      - ./db/mysql_data:/var/lib/mysql
+      # 文字化け対策
+      - ./my.cnf:/etc/mysql/conf.d/my.cnf
+    tty: true
