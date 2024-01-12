@@ -47,6 +47,9 @@ func main() {
 	router.HandleFunc("/cars", carHandler.CreateCar).Methods("POST")
 	router.HandleFunc("/sensors", sensorHandler.CreateSensor).Methods("POST")
 
+	router.HandleFunc("/login", userHandler.Login).Methods("PUT")
+	router.HandleFunc("/logout", userHandler.Logout).Methods("PUT")
+
 	fmt.Println("Server is running on port 8000")
 	log.Fatal(http.ListenAndServe(":8000", router))
 }

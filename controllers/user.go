@@ -60,3 +60,21 @@ func (h *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 	user.ID = id
 	json.NewEncoder(w).Encode(user)
 }
+
+func (h *UserController) Login(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var user models.User
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+
+	users, err := h.models.Login(user.Username, user.Password)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(users)
+}

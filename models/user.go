@@ -5,6 +5,18 @@ import (
 	"time"
 )
 
+// Globalmap
+var matching_Map = map[string]string{}
+
+type Message struct {
+	Message string `json:"message"`
+}
+
+type UserKind struct {
+	Name string `json:"username"`
+	kind int    `json:"kind"`
+}
+
 type User struct {
 	ID             int    `json:"id"`
 	Username       string `json:"username"`
@@ -95,8 +107,86 @@ func (m *UserModel) Insert(username string, password string, collab_service stri
 	}
 
 	id, err := result.LastInsertId()
+
 	if err != nil {
 		return 0, err
 	}
 	return int(id), nil
 }
+
+func (m *UserModel) Login(username string, password string) (Message, error) {
+	row, err := m.DB.Query("SELECT kind FROM User WHERE username = ? AND password = ?", username, password)
+	if err != nil {
+		return Message{"failed"}, err
+	}
+
+	_, err = m.DB.Exec("UPDATE User SET login = 1 WHERE username = ? AND password = ?", username, password)
+	if err != nil {
+		return Message{"failed"}, err
+	}
+	defer row.Close()
+
+	var kind string
+	if row.Next() {
+		if err := row.Scan(&kind); err != nil {
+			return Message{"failed"}, err
+		}
+	}
+
+	if kind == "false" {
+		kind = "driver"
+	} else {
+		kind = "costomer"
+	}
+
+	return Message{kind}, nil
+}
+
+func (m *UserModel) Logout(username string, password string) (Message, error) {
+	row, err := m.DB.Query("SELECT kind FROM User WHERE username = ? AND password = ?", username, password)
+	if err != nil {
+		return Message{"failed"}, err
+	}
+
+	_, err = m.DB.Exec("UPDATE User SET login = 0 WHERE username = ? AND password = ?", username, password)
+	if err != nil {
+		return Message{"failed"}, err
+	}
+	defer row.Close()
+
+	var kind string
+	if row.Next() {
+		if err := row.Scan(&kind); err != nil {
+			return Message{"failed"}, err
+		}
+	}
+
+	if kind == "false" {
+		kind = "costomer"
+	} else {
+		kind = "driver"
+	}
+
+	return Message{kind}, nil
+}
+
+// func (m *UserModel) customer() (Message, error) {
+// 	row, err := m.DB.Query("SELECT username, kind FROM User WHERE login = 1 AND kind = 0")
+// 	if err != nil {
+// 		return Message{"failed"}, err
+// 	}
+
+// 	defer row.Close()
+
+// 	if len(row) == 0 {
+// 		// 再帰する
+// 		// customer(w, r)
+// 	} else {
+// 		// 乱数を生成
+// 		rand.Seed(time.Now().UnixNano())
+// 		index := rand.Intn(len(result))
+// 		driver := result[index].Name
+// 		matching_Map[driver] = name
+// 		m := Message{driver}
+// 	}
+// }
