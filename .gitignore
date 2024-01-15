@@ -1,1 +1,4 @@
-./db
+golang
+node_modules
+.gitignore
+package-lock.json
