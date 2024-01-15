@@ -4,9 +4,12 @@ import (
 	"IoTSer/controllers"
 	"IoTSer/models"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
@@ -14,6 +17,25 @@ import (
 
 func main() {
 	router := mux.NewRouter()
+
+	corsMiddleware := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Set headers
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+			w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+
+			// If it's a preflight request, respond immediately
+			if r.Method == "OPTIONS" {
+				return
+			}
+
+			// Otherwise, pass the request to the next middleware in the chain
+			next.ServeHTTP(w, r)
+		})
+	}
+
+	router.Use(corsMiddleware)
 
 	db, err := sql.Open("mysql", "user:userpassword@tcp(localhost:3306)/IoTSer_db")
 	if err != nil {
@@ -47,9 +69,109 @@ func main() {
 	router.HandleFunc("/cars", carHandler.CreateCar).Methods("POST")
 	router.HandleFunc("/sensors", sensorHandler.CreateSensor).Methods("POST")
 
+	http.HandleFunc("/customer", customer)
+	http.HandleFunc("/driver", driver)
+
 	router.HandleFunc("/login", userHandler.Login).Methods("PUT")
 	router.HandleFunc("/logout", userHandler.Logout).Methods("PUT")
 
 	fmt.Println("Server is running on port 8000")
 	log.Fatal(http.ListenAndServe(":8000", router))
+}
+
+var matching_Map = map[string]string{}
+
+type Message struct {
+	Message string `json:"message"`
+}
+
+type User struct {
+	Name string `json:"username"`
+	kind int    `json:"kind"`
+}
+
+func getquery(Query string) []User {
+	// データベースに接続
+	db, err := sql.Open("mysql", "user:userpassword@tcp(localhost:3306)/IoTSer_db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	// データベースに接続できるか確認
+	err = db.Ping()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Successfully connected!")
+
+	// データを取得
+	rows, err := db.Query(Query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	// 取得したデータを戻り値にする
+	var result []User
+	for rows.Next() {
+		var user User
+		err := rows.Scan(&user.Name, &user.kind)
+		if err != nil {
+			log.Fatal(err)
+		}
+		result = append(result, user)
+	}
+	return result
+}
+
+func customer(w http.ResponseWriter, r *http.Request) {
+	// paramsから値を取得
+	params := r.URL.Query()
+	name := params.Get("name")
+	Query := "SELECT username,kind FROM user WHERE login = 1 AND kind = 0"
+	result := getquery(Query)
+	if len(result) == 0 {
+		// 再帰する
+		// customer(w, r)
+	} else {
+		// 乱数を生成
+		rand.Seed(time.Now().UnixNano())
+		index := rand.Intn(len(result))
+		driver := result[index].Name
+		matching_Map[driver] = name
+		m := Message{driver}
+		res, err := json.Marshal(m)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(res)
+	}
+}
+
+func driver(w http.ResponseWriter, r *http.Request) {
+	params := r.URL.Query()
+	name := params.Get("name")
+	// 無限ループ
+	for {
+		// マッチングマップがNullでないか確認
+		if matching_Map[name] != "" {
+			// マッチングマップから値を取得
+			customer := matching_Map[name]
+			m := Message{customer}
+			res, err := json.Marshal(m)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(res)
+			break
+		}
+		// 2秒待つ
+		time.Sleep(2 * time.Second)
+	}
 }

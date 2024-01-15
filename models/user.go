@@ -142,13 +142,13 @@ func (m *UserModel) Login(username string, password string) (Message, error) {
 	return Message{kind}, nil
 }
 
-func (m *UserModel) Logout(username string, password string) (Message, error) {
-	row, err := m.DB.Query("SELECT kind FROM User WHERE username = ? AND password = ?", username, password)
+func (m *UserModel) Logout(id int) (Message, error) {
+	row, err := m.DB.Query("SELECT kind FROM User WHERE id = ?", id)
 	if err != nil {
 		return Message{"failed"}, err
 	}
 
-	_, err = m.DB.Exec("UPDATE User SET login = 0 WHERE username = ? AND password = ?", username, password)
+	_, err = m.DB.Exec("UPDATE User SET login = 0 WHERE id = ?", id)
 	if err != nil {
 		return Message{"failed"}, err
 	}
