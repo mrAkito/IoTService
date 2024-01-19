@@ -23,10 +23,11 @@ func main() {
 			// Set headers
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-			w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+			w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization")
+			w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 
-			// If it's a preflight request, respond immediately
 			if r.Method == "OPTIONS" {
+				w.WriteHeader(http.StatusOK)
 				return
 			}
 
@@ -64,16 +65,16 @@ func main() {
 	router.HandleFunc("/estimations", estimationHandler.GetEstimations).Methods("GET")
 	router.HandleFunc("/sensors", sensorHandler.GetSensors).Methods("GET")
 
-	router.HandleFunc("/users", userHandler.CreateUser).Methods("POST")
-	router.HandleFunc("/estimations", estimationHandler.CreateEstimation).Methods("POST")
-	router.HandleFunc("/cars", carHandler.CreateCar).Methods("POST")
-	router.HandleFunc("/sensors", sensorHandler.CreateSensor).Methods("POST")
+	router.HandleFunc("/users", userHandler.CreateUser).Methods("POST", "OPTIONS")
+	router.HandleFunc("/estimations", estimationHandler.CreateEstimation).Methods("POST", "OPTIONS")
+	router.HandleFunc("/cars", carHandler.CreateCar).Methods("POST", "OPTIONS")
+	router.HandleFunc("/sensors", sensorHandler.CreateSensor).Methods("POST", "OPTIONS")
 
 	http.HandleFunc("/customer", customer)
 	http.HandleFunc("/driver", driver)
 
-	router.HandleFunc("/login", userHandler.Login).Methods("PUT")
-	router.HandleFunc("/logout", userHandler.Logout).Methods("PUT")
+	router.HandleFunc("/login", userHandler.Login).Methods("PUT", "OPTIONS")
+	router.HandleFunc("/logout", userHandler.Logout).Methods("PUT", "OPTIONS")
 
 	fmt.Println("Server is running on port 8000")
 	log.Fatal(http.ListenAndServe(":8000", router))

@@ -4,7 +4,11 @@ const cors = require('cors');
 const app = express();
 
 // CORS設定
-app.use(cors());
+app.use(cors({
+    origin: '*', // 全てのオリジンからのリクエストを許可
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // GET, POST, PUT, DELETEメソッドを許可
+  }));
+  
 
 // ここからサーバのルーティングを定義する
 
@@ -19,6 +23,6 @@ app.get('/', (req, res) => {
 });
 
 // サーバを起動する
-app.listen(3000, () => {
-    console.log('Server is running on port 3000');
+app.listen(8080, () => {
+    console.log('Server is running on port 8080');
 });

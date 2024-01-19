@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>ログイン</title>
   <!--script src="script.js" defer></script-->
 </head>
@@ -17,11 +18,34 @@
       <input type="password" id="password" name="password" required>
 
       <p id="output"></p>
-      <button type="button" onclick="login()">ログイン</button>
+      <button type="button" onclick="LoginFunc()">ログイン</button>
     </form>
   </div>
 
   <script>
+    async function LoginFunc() {
+      const data = {
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value,
+      };
+
+      try {
+        const response = await fetch("http://localhost:8000/login", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+        const value = result.message;
+        console.log("Success:", value);
+      } catch (error) {
+        console.error("Error:", error);
+      }
+    }
+
     function login() {
     // fetch("https://fd84-125-103-213-138.ngrok-free.app/sensors", {
     //     method: "POST",
@@ -49,23 +73,7 @@
     // });
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      const res = fetch("http://10.205.126.15:8081/");
+      const res = fetch("http://localhost:8000/users");
     //   bodyを出力する
         // responseを全て読み込む
         res.then((response) => {
